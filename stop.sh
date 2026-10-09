@@ -118,8 +118,11 @@ pkill -f "docker logs -f ${HEAD_CTN}" >/dev/null 2>&1 || true
 info "head: SIGTERM sglang in $HEAD_CTN, then remove"
 _stop_sglang_in "$HEAD_CTN"
 _rm_ctn "$HEAD_CTN"
-# anything else this recipe named
-ids=$(docker ps -aq --filter "name=dsv41-" 2>/dev/null || true)
+# anything else this recipe named, except the NFS exporter: ./start.sh share reuses it (it runs with
+# --restart unless-stopped). Removing it while the workers still have the volume mounted takes minutes
+# in the kernel, and a serve started meanwhile reuses the dying exporter and hangs on the hard mounts.
+ids=$(docker ps -a --filter "name=dsv41-" --format '{{.ID}} {{.Names}}' 2>/dev/null \
+  | awk -v keep="${NFS_CONTAINER:-dsv41-nfs}" '$2 != keep {print $1}' || true)
 if [[ -n "$ids" ]]; then
   # shellcheck disable=SC2086
   timeout "$RM_TIMEOUT" docker rm -f $ids >/dev/null 2>&1 || true
