@@ -161,13 +161,13 @@ else
   info "API down on :${PORT}"
 fi
 
-left=$(docker ps --format '{{.Names}}' 2>/dev/null | grep -E '^dsv41-' || true)
+left=$(docker ps --format '{{.Names}}' 2>/dev/null | grep -E '^dsv41-' | grep -vx "${NFS_CONTAINER:-dsv41-nfs}" || true)
 if [[ -n "$left" ]]; then
   warn "still running on head: $left"
 else
   info "no dsv41-* containers on head"
 fi
 
-info "kept: spark1 weights, $IMAGE overlay, vllm-fn-nfs exporter"
+info "kept: spark1 weights, $IMAGE overlay, ${NFS_CONTAINER:-dsv41-nfs} exporter"
 [[ "$UNMOUNT" == "1" ]] || info "worker NFS volume $NFS_VOLUME kept (./stop.sh --unmount to drop it)"
 info "start again with: ./start.sh"
